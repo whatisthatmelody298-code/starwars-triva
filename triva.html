@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Star Wars Holocron Trivia</title>
+    <style>
+        :root {
+            --holocron-blue: #4deeea;
+            --jedi-green: #2ecc71;
+            --sith-red: #ff2a2a;
+            --space-black: #0a0a0c;
+            --panel-bg: rgba(20, 20, 25, 0.9);
+            --theme-color: var(--holocron-blue);
+            --glow-shadow: rgba(77, 238, 234, 0.3);
+        }
+
+        body.knight-mode {
+            --theme-color: var(--jedi-green);
+            --glow-shadow: rgba(46, 204, 113, 0.3);
+        }
+
+        body.master-mode {
+            --theme-color: var(--sith-red);
+            --glow-shadow: rgba(255, 42, 42, 0.3);
+        }
+
+        body {
+            background-color: var(--space-black);
+            background-image: 
+                radial-gradient(white, rgba(255,255,255,.15) 1px, transparent 30px),
+                radial-gradient(white, rgba(255,255,255,.05) 2px, transparent 40px);
+            background-size: 350px 350px, 250px 250px;
+            background-position: 0 0, 130px 270px;
+            color: #ffffff;
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            transition: background 0.5s ease;
+        }
+
+        .game-container {
+            background: var(--panel-bg);
+            border: 2px solid var(--theme-color);
+            box-shadow: 0 0 20px var(--glow-shadow);
+            border-radius: 12px;
+            padding: 30px;
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+            backdrop-filter: blur(5px);
+            transition: all 0.5s ease;
+        }
+
+        h1 {
+            color: var(--theme-color);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-top: 0;
+            font-size: 1.8rem;
+            text-shadow: 0 0 10px var(--glow-shadow);
+            transition: all 0.5s ease;
+        }
+
+        .difficulty-badge {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--theme-color);
+            margin-bottom: 15px;
+            font-weight: bold;
+            transition: color 0.5s ease;
+        }
+
+        .stats-bar {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 25px;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .stat-box {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 8px 15px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        #lives {
+            text-shadow: 0 0 5px rgba(255, 42, 42, 0.4);
+            letter-spacing: 2px;
+        }
+
+        #score {
+            color: var(--theme-color);
+            transition: color 0.5s ease;
+        }
+
+        .hint-image-container {
+            width: 100%;
+            max-height: 0;
+            overflow: hidden;
+            border-radius: 8px;
+            margin-bottom: 0;
+            transition: max-height 0.5s cubic-bezier(0, 1, 0, 1), margin 0.3s ease;
+            border: 0 solid rgba(255, 255, 255, 0.15);
+        }
+
+        .hint-image-container.revealed {
+            max-height: 220px;
+            margin-bottom: 20px;
+            border-width: 1px;
+            transition: max-height 0.8s ease-in-out;
+        }
+
+        .hint-image-container img {
+            width: 100%;
+            height: 220px;
+            object-fit: cover;
+        }
+
+        .question-text {
+            font-size: 1.25rem;
+            line-height: 1.5;
+            margin-bottom: 25px;
+            min-height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        input[type="text"] {
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 14px;
+            border-radius: 6px;
+            color: #fff;
+            font-size: 1.1rem;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--theme-color);
+            box-shadow: 0 0 10px var(--glow-shadow);
+        }
+
+        button {
+            background: var(--theme-color);
+            color: #000;
+            border: none;
+            padding: 14px;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            box-shadow: 0 0 15px var(--glow-shadow);
+            transform: translateY(-1px);
+        }
+
+        .feedback {
+            margin-top: 20px;
+            font-weight: bold;
+            font-size: 1rem;
+            min-height: 24px;
+        }
+
+        .correct { color: #2ecc71; }
+        .wrong { color: var(--sith-red); }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+        <div id="difficulty-text" class="difficulty-badge">Rank: Padawan</div>
+        <h1>Holocron Archive</h1>
+        
+        <div class="stats-bar">
+            <div class="stat-box">Score: <span id="score">0</span></div>
+            <div class="stat-box">Lives: <span id="lives">❤️❤️❤️❤️❤️</span></div>
+        </div>
+
+        <div id="game-box">
+            <div id="hint-box" class="hint-image-container">
+                <img id="hint-img" src="" alt="Visual Transmission Hint">
+            </div>
+
+            <div id="question-text" class="question-text">Syncing with Jedi Archives...</div>
+
+            <div class="input-group">
+                <input type="text" id="answer-input" placeholder="Transmit your answer..." autocomplete="off">
+                <button id="submit-btn" onclick="checkAnswer()">Submit Transmission</button>
+            </div>
+            
+            <div id="feedback" class="feedback"></div>
+        </div>
+
+        <div id="game-over-box" class="hidden">
+            <h2 id="game-over-title" style="color: var(--sith-red);">One with the Force.</h2>
+            <p>Your final archive score: <span id="final-score">0</span></p>
+            <button onclick="restartGame()">Reinitialize Terminal</button>
+        </div>
+    </div>
+
+    <script>
+        const padawanPool = [
+            {
+                question: "Who is Luke and Leia's biological mother?",
+                answers: ["padme", "padme amidala", "queen amidala"],
+                hintImg: "https://images.unsplash.com/photo-1594744803329-e58b31de215f?w=500&q=80"
+            },
+            {
+                question: "What desert planet was Anakin Skywalker found on as a boy?",
+                answers: ["tatooine"],
+                hintImg: "https://images.unsplash.com/photo-1547234935-80c7145ec969?w=500&q=80"
+            },
+            {
+                question: "What primary weapon is wielded by Jedi Knights and Sith Lords?",
+                answers: ["lightsaber", "light saber", "lightsabre"],
+                hintImg: "https://images.unsplash.com/photo-1563089145-599997674d42?w=500&q=80"
+            },
+            {
+                question: "Who is the mechanical Sith Lord that reveals himself as Luke's father?",
+                answers: ["darth vader", "vader", "anakin", "anakin skywalker"],
+                hintImg: "https://images.unsplash.com/photo-1608889174637-3c44f6326f20?w=500&q=80"
+            }
+        ];
+
+        const jediKnightPool = [
+            {
+                question: "What is the name of the Mandalorian bounty hunter who wears iconic green and red armor?",
+                answers: ["boba fett", "boba", "fett"],
+                hintImg: "https://images.unsplash.com/photo-1552053831-71594a27632d?w=500&q=80"
+            },
+            {
+                question: "Which ocean-covered planet hosts the cloning facilities where the Clone Army was engineered?",
+                answers: ["kamino"],
+                hintImg: "https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=500&q=80"
+            },
+            {
+                question: "What desert outpost planet serves as the primary base of operations for the Mandalorian in season one?",
+                answers: ["nevarro"],
+                hintImg: "https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?w=500&q=80"
+            },
+            {
+                question: "What is the title of the standalone movie focusing on the extraction of the Death Star plans?",
+                answers: ["rogue one", "rogue one: a star wars story", "rogue 1"],
+                hintImg: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=500&q=80"
+            }
+        ];
+
+        const jediMasterPool = [
+            {
+                question: "In The Clone Wars, what is the number designation of Ahsoka Tano's custom clone trooper legion?",
+                answers: ["332nd", "332", "332nd company", "the 332nd"],
+                hintImg: "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=500&q=80"
+            },
+            {
+                question: "What is the designation number of the ARC trooper clone known as 'Fives'?",
+                answers: ["ct-5555", "5555", "ct5555"],
+                hintImg: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500&q=80"
+            },
+            {
+                question: "What is the name of Grand Admiral Thrawn's signature Imperial Flagship Star Destroyer?",
+                answers: ["chimaera", "the chimaera"],
+                hintImg: "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=500&q=80"
+            },
+            {
+                question: "Who was the corrupted four-armed Jedi General who betrayed the Republic forces on Umbara?",
+                answers: ["pong krell", "general krell", "krell"],
+                hintImg: "https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?w=500&q=80"
+            },
+            {
+                question: "What species is the notorious, hat-wearing bounty hunter Cad Bane?",
+                answers: ["duros"],
+                hintImg: "https://images.unsplash.com/photo-1500485035595-cbe6f645feb1?w=500&q=80"
+            }
+        ];
+
+        // --- Core Application State Variables ---
+        let score = 0;
+        let maxLives = 5; // Upgraded to 5 lives
+        let lives = maxLives;
+        let currentQuestion = null;
+        let wrongAttemptsOnThisQuestion = 0; // Tracking consecutive errors on the active node
+        
+        let activePadawanList = [];
+        let activeKnightList = [];
+        let activeMasterList = [];
+
+        function initGame() {
+            score = 0;
+            lives = maxLives;
+            wrongAttemptsOnThisQuestion = 0;
+            
+            activePadawanList = [...padawanPool];
+            activeKnightList = [...jediKnightPool];
+            activeMasterList = [...jediMasterPool];
+            
+            document.getElementById('game-over-box').classList.add('hidden');
+            document.getElementById('game-box').classList.remove('hidden');
+            
+            updateUIState();
+            nextQuestion();
+        }
+
+        function updateUIState() {
+            document.getElementById('score').innerText = score;
+            document.getElementById('lives').innerText = "❤️".repeat(lives);
+            
+            const badge = document.getElementById('difficulty-text');
+            const bodyEl = document.body;
+
+            if (score >= 8) {
+                bodyEl.className = "master-mode";
+                badge.innerText = "Rank: Jedi Master (Clone Wars & Deep Lore)";
+            } else if (score >= 4) {
+                bodyEl.className = "knight-mode";
+                badge.innerText = "Rank: Jedi Knight (Spin-offs & Expanded Canon)";
+            } else {
+                bodyEl.className = "";
+                badge.innerText = "Rank: Padawan (Core Saga Movies)";
+            }
+        }
+
+        function nextQuestion() {
+            wrongAttemptsOnThisQuestion = 0; // Reset question fail meter
+            document.getElementById('answer-input').value = "";
+            document.getElementById('feedback').innerText = "";
+            document.getElementById('feedback').className = "feedback";
+            
+            const hintBox = document.getElementById('hint-box');
+            hintBox.classList.remove('revealed');
+
+            let targetList;
+            
+            if (score >= 8) {
+                targetList = activeMasterList;
+                if (targetList.length === 0) { activeMasterList = [...jediMasterPool]; targetList = activeMasterList; }
+            } else if (score >= 4) {
+                targetList = activeKnightList;
+                if (targetList.length === 0) { activeKnightList = [...jediKnightPool]; targetList = activeKnightList; }
+            } else {
+                targetList = activePadawanList;
+                if (targetList.length === 0) { activePadawanList = [...padawanPool]; targetList = activePadawanList; }
+            }
+
+            const randomIndex = Math.floor(Math.random() * targetList.length);
+            currentQuestion = targetList[randomIndex];
+            targetList.splice(randomIndex, 1);
+
+            document.getElementById('question-text').innerText = currentQuestion.question;
+            document.getElementById('hint-img').src = currentQuestion.hintImg || "";
+        }
+
+        function checkAnswer() {
+            const userInput = document.getElementById('answer-input').value.trim().toLowerCase();
+            const feedbackEl = document.getElementById('feedback');
+            const submitBtn = document.getElementById('submit-btn');
+
+            if (!userInput) return;
+
+            const isCorrect = currentQuestion.answers.some(validAns => validAns === userInput);
+
+            if (isCorrect) {
+                score++;
+                feedbackEl.innerText = "Access granted. Transmission decrypted successfully.";
+                feedbackEl.className = "feedback correct";
+                updateUIState();
+                
+                submitBtn.disabled = true;
+                setTimeout(() => {
+                    submitBtn.disabled = false;
+                    nextQuestion();
+                }, 1100);
+
+            } else {
+                lives--;
+                wrongAttemptsOnThisQuestion++;
+                updateUIState();
+                
+                if (lives <= 0) {
+                    gameOver();
+                    return;
+                }
+
+                // If user has failed this question twice in a row
+                if (wrongAttemptsOnThisQuestion >= 2) {
+                    // Title-case the primary answer option for presentation 
+                    const primaryAnswer = currentQuestion.answers[0].toUpperCase();
+                    feedbackEl.innerText = `Bypass activated. Answer: ${primaryAnswer}. Loading next node...`;
+                    feedbackEl.className = "feedback wrong";
+                    
+                    submitBtn.disabled = true;
+                    setTimeout(() => {
+                        submitBtn.disabled = false;
+                        nextQuestion();
+                    }, 2500); // Higher delay so user can process the missed solution
+                } else {
+                    // First failure mechanics: Display error message and expose visual hint card
+                    feedbackEl.innerText = "Data mismatch. Visual feeds activated. Try again!";
+                    feedbackEl.className = "feedback wrong";
+                    document.getElementById('answer-input').value = "";
+                    
+                    if (currentQuestion.hintImg) {
+                        document.getElementById('hint-box').classList.add('revealed');
+                    }
+                }
+            }
+        }
+
+        function gameOver() {
+            document.getElementById('game-box').classList.add('hidden');
+            document.getElementById('game-over-box').classList.remove('hidden');
+            document.getElementById('final-score').innerText = score;
+            
+            const titleEl = document.getElementById('game-over-title');
+            if (score >= 8) {
+                titleEl.innerText = "Defeated by Sith Inquisitors.";
+            } else if (score >= 4) {
+                titleEl.innerText = "Lost in the Outer Rim Archives.";
+            } else {
+                titleEl.innerText = "Returned to the Padawan Academies.";
+            }
+        }
+
+        function restartGame() {
+            initGame();
+        }
+
+        document.getElementById('answer-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                checkAnswer();
+            }
+        });
+
+        window.onload = initGame;
+    </script>
+</body>
+</html>
